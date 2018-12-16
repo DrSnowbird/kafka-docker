@@ -1,26 +1,45 @@
-FROM anapsix/alpine-java
+FROM openjdk:8u181-jre-alpine
 
-ARG kafka_version=0.11.0.1
+ARG kafka_version=2.1.0
 ARG scala_version=2.12
+ARG glibc_version=2.28-r0
+ARG vcs_ref=unspecified
+ARG build_date=unspecified
 
-MAINTAINER wurstmeister
+LABEL org.label-schema.name="kafka" \
+      org.label-schema.description="Apache Kafka" \
+      org.label-schema.build-date="${build_date}" \
+      org.label-schema.vcs-url="https://github.com/wurstmeister/kafka-docker" \
+      org.label-schema.vcs-ref="${vcs_ref}" \
+      org.label-schema.version="${scala_version}_${kafka_version}" \
+      org.label-schema.schema-version="1.0" \
+      maintainer="wurstmeister"
 
-RUN apk add --update unzip wget curl docker jq coreutils
+ENV KAFKA_VERSION=$kafka_version \
+    SCALA_VERSION=$scala_version \
+    KAFKA_HOME=/opt/kafka \
+    GLIBC_VERSION=$glibc_version
 
-ENV KAFKA_VERSION=$kafka_version SCALA_VERSION=$scala_version
-ADD download-kafka.sh /tmp/download-kafka.sh
-RUN chmod a+x /tmp/download-kafka.sh && sync && /tmp/download-kafka.sh && tar xfz /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz -C /opt && rm /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz && ln -s /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka
+ENV PATH=${PATH}:${KAFKA_HOME}/bin
+
+COPY download-kafka.sh start-kafka.sh broker-list.sh create-topics.sh versions.sh /tmp/
+
+RUN apk add --no-cache bash curl jq docker \
+ && mkdir /opt \
+ && chmod a+x /tmp/*.sh \
+ && mv /tmp/start-kafka.sh /tmp/broker-list.sh /tmp/create-topics.sh /tmp/versions.sh /usr/bin \
+ && sync && /tmp/download-kafka.sh \
+ && tar xfz /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz -C /opt \
+ && rm /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz \
+ && ln -s /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka \
+ && rm /tmp/* \
+ && wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-${GLIBC_VERSION}.apk \
+ && apk add --no-cache --allow-untrusted glibc-${GLIBC_VERSION}.apk \
+ && rm glibc-${GLIBC_VERSION}.apk
+
+COPY overrides /opt/overrides
 
 VOLUME ["/kafka"]
 
-ENV KAFKA_HOME /opt/kafka
-ENV PATH ${PATH}:${KAFKA_HOME}/bin
-ADD start-kafka.sh /usr/bin/start-kafka.sh
-ADD broker-list.sh /usr/bin/broker-list.sh
-ADD create-topics.sh /usr/bin/create-topics.sh
-# The scripts need to have executable permission
-RUN chmod a+x /usr/bin/start-kafka.sh && \
-    chmod a+x /usr/bin/broker-list.sh && \
-    chmod a+x /usr/bin/create-topics.sh
 # Use "exec" form so that it runs as PID 1 (useful for graceful shutdown)
 CMD ["start-kafka.sh"]
