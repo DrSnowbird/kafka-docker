@@ -16,7 +16,9 @@ Tags and releases
 
 All versions of the image are built from the same set of scripts with only minor variations (i.e. certain features are not supported on older versions). The version format mirrors the Kafka format, `<scala version>-<kafka version>`. Initially, all images are built with the recommended version of scala documented on [http://kafka.apache.org/downloads](http://kafka.apache.org/downloads). Available tags are:
 
-- `2.12-2.1.0`
+- `2.12-2.3.0`
+- `2.12-2.2.1`
+- `2.12-2.1.1`
 - `2.12-2.0.1`
 - `2.11-1.1.1`
 - `2.11-1.0.2`
@@ -31,8 +33,7 @@ Everytime the image is updated, all tags will be pushed with the latest updates.
 
 ## Announcements
 
-* **11-Nov-2018** - Update base image to openjdk 181 ([Release notes](https://www.oracle.com/technetwork/java/javase/8u181-relnotes-4479407.html)). Please force pull to get these latest updates - including security patches etc.
-* **28-May-2018** - New docker image tag format - see Readme.
+* **04-Jun-2019** - Update base image to openjdk 212 ([Release notes](https://www.oracle.com/technetwork/java/javase/8u212-relnotes-5292913.html). Please force pull to get these latest updates - including security patches etc.
 
 ---
 
@@ -122,7 +123,7 @@ KAFKA_ADVERTISED_LISTENERS=SSL://_{HOSTNAME_COMMAND}:9093,PLAINTEXT://9092
 If the required advertised port is not static, it may be necessary to determine this programatically. This can be done with the `PORT_COMMAND` environment variable.
 
 ```
-PORT_COMMAND: "docker port $$(hostname) 9092/tcp | cut -d: -f2
+PORT_COMMAND: "docker port $$(hostname) 9092/tcp | cut -d: -f2"
 ```
 
 This can be then interpolated in any other `KAFKA_XXX` config using the `_{PORT_COMMAND}` string, i.e.
